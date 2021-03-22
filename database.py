@@ -40,7 +40,8 @@ def fill_db():
                                         num_nights integer NOT NULL,
                                         check_in_date text NOT NULL,
                                         check_out_date text NOT NULL,
-                                        phone_num text NOT NULL,
+                                        phone_num interger NOT NULL,
+                                        late_check_out text NULL,
                                         FOREIGN KEY (confirmation_num) REFERENCES rooms (room_num)
                                     );"""
 
