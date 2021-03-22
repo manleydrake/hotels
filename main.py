@@ -18,7 +18,6 @@ def create_customer_profile(conn, conf_num, phone):
         )
         conn.commit()
     cur.close()
-    conn.close()
 
 
 def display_available_rooms(conn):
@@ -28,7 +27,6 @@ def display_available_rooms(conn):
         avail_rooms = cur.fetchall()
         print(avail_rooms)
     cur.close()
-    conn.close()
 
 
 def display_arrivals(conn):
@@ -61,12 +59,11 @@ def create_reservation(conn):
     check_out = input("Enter desired check out date (YYYY-MM-DD): ")
     num_nights = int(input("Enter the number of nights: "))
     phone = int(input("Enter phone number in form xxxxxxxxxx: "))
-    room = int(input("Enter room number: "))
 
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO reservation (confirmation_num, num_nights, check_in_date, check_out_date, phone_num) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO reservation (confirmation_num, num_nights, check_in_date, check_out_date, phone_num) VALUES (?, ?, ?, ?, ?)",
             (conf_num, num_nights, check_in, check_out, phone),
         )
         conn.commit()
@@ -76,20 +73,56 @@ def create_reservation(conn):
 def check_in(conn):
     conf_num = int(input("Enter the confirmation number: "))
     room_num = int(input("Please assign a room number: "))
+
     if conn is not None:
         cur = conn.cursor()
-        cur.executescript(
-            """
-            INSERT INTO booking (room_num) VALUES (?), (room_num);
-
-            INSERT INTO booking SELECT * FROM reservation WHERE reservation.confirmation_num = ?, (conf_num);
-
-            UPDATE rooms JOIN reservation ON rooms.room_num = reservation.room_num SET rooms.status = 'Occupied' WHERE reservation.confirmation_num = ?, (conf_num);
-
-            """
+        cur.execute(
+            "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
         )
-        conn.commit()
-        conn.close()
+        cur.execute(
+            "INSERT INTO booking (room_num, late_check_out) VALUES (?, 'No')",
+            (room_num,),
+        )
+        cur.execute(
+            "INSERT INTO booking (confirmation_num, num_nights, check_in_date, check_out_date, phone_num) SELECT * FROM reservation WHERE reservation.confirmation_num = ? AND booking.roon_num = ?",
+            (conf_num, room_num),
+        )
+
+    conn.commit()
+
+
+def check_out(conn):
+    room_num = int(input("Enter the room you want to check out: "))
+
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE rooms SET status = 'Needs Cleaning' WHERE room_num = ?", (room_num,)
+        )
+        cur.execute("DELETE FROM booking WHERE room_num = ?", (room_num,))
+    conn.commit()
+
+
+def request_late_check_out(conn):
+    room_selected = int(input("Enter a room number: "))
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE booking SET late_check_out = 'Yes' WHERE room_num = ?",
+            (room_selected),
+        )
+    conn.commit()
+
+
+def change_room_status(conn):
+    room_num = int(input("Enter a room number: "))
+
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE rooms SET status = 'Available' WHERE room_num = ?", (room_num,)
+        )
+    conn.commit()
 
 
 def main():
@@ -106,7 +139,8 @@ def main():
         print("Enter 2 to create a reservation")
         print("Enter 3 to check in a guest")
         print("Enter 4 to check out a guest")
-        print("Enter 5 to quit")
+        print("Enter 5 to mark a room as clean")
+        print("Enter 6 to quit")
         choice = int(input("Enter option: "))
 
         if choice == 1:
@@ -116,8 +150,9 @@ def main():
         elif choice == 3:
             check_in(conn)
         elif choice == 4:
-            continue
-            # TODO: CHANGE ROOM STATUS TO AVAILABLE
+            check_out(conn)
+        elif choice == 5:
+            change_room_status(conn)
         else:
             loop = False
     conn.close()
