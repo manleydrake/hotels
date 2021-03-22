@@ -23,9 +23,12 @@ def create_customer_profile(conn, conf_num, phone):
 def display_available_rooms(conn):
     if conn is not None:
         cur = conn.cursor()
-        cur.execute("SELECT room_num, room_type FROM rooms WHERE status = 'Available';")
+        cur.execute("SELECT * FROM rooms WHERE status = 'Available';")
         avail_rooms = cur.fetchall()
-        print(avail_rooms)
+        for i in range(len(avail_rooms)):
+            for j in range(7):
+                print(avail_rooms[i][j], end=" ")
+            print()
     cur.close()
 
 
@@ -54,7 +57,7 @@ def display_departures(conn):
 
 
 def create_reservation(conn):
-    conf_num = randint(1, 10000) * 1.2
+    conf_num = randint(1, 10000)
     check_in = input("Enter desired check in date (YYYY-MM-DD): ")
     check_out = input("Enter desired check out date (YYYY-MM-DD): ")
     num_nights = int(input("Enter the number of nights: "))
@@ -68,10 +71,11 @@ def create_reservation(conn):
         )
         conn.commit()
     create_customer_profile(conn, conf_num, phone)
+    print("Your confirmation number is: ", conf_num)
 
 
 def check_in(conn):
-    conf_num = int(input("Enter the confirmation number: "))
+    conf_num = input("Enter the confirmation number: ")
     room_num = int(input("Please assign a room number: "))
 
     if conn is not None:
@@ -79,13 +83,51 @@ def check_in(conn):
         cur.execute(
             "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
         )
+
         cur.execute(
-            "INSERT INTO booking (room_num, late_check_out) VALUES (?, 'No')",
-            (room_num,),
+            "SELECT num_nights from reservation WHERE confirmation_num = ?",
+            (conf_num,),
+        )
+        num_nights = cur.fetchall()
+        num_nights = num_nights[0][0]
+
+        cur.execute(
+            "SELECT check_in_date from reservation WHERE confirmation_num = ?",
+            (conf_num,),
+        )
+        check_in_date = cur.fetchall()
+        check_in_date = check_in_date[0][0]
+
+        cur.execute(
+            "SELECT check_out_date from reservation WHERE confirmation_num = ?",
+            (conf_num,),
+        )
+        check_out_date = cur.fetchall()
+        check_out_date = check_out_date[0][0]
+
+        cur.execute(
+            "SELECT phone_num from reservation WHERE confirmation_num = ?",
+            (conf_num,),
+        )
+        phone_number = cur.fetchall()
+        phone_number = phone_number[0][0]
+
+        late = "No"
+
+        print(
+            room_num, conf_num, num_nights, check_in_date, check_out_date, phone_number
         )
         cur.execute(
-            "INSERT INTO booking (confirmation_num, num_nights, check_in_date, check_out_date, phone_num) SELECT * FROM reservation WHERE reservation.confirmation_num = ? AND booking.roon_num = ?",
-            (conf_num, room_num),
+            "INSERT INTO booking (room_num, confirmation_num, num_nights, check_in_date, check_out_date, phone_num, late_check_out) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                room_num,
+                conf_num,
+                num_nights,
+                check_in_date,
+                check_out_date,
+                phone_number,
+                late,
+            ),
         )
 
     conn.commit()
@@ -125,6 +167,22 @@ def change_room_status(conn):
     conn.commit()
 
 
+def filter_rooms(conn):
+    filter_room = int(input("How many people will be staying? "))
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT room_num, max_capacity FROM rooms WHERE status = 'Available' and max_capacity >= ?",
+            (filter_room,),
+        )
+        conn.commit()
+        avail_rooms = cur.fetchall()
+        for i in range(len(avail_rooms)):
+            for j in range(2):
+                print(avail_rooms[i][j], end=" ")
+            print()
+
+
 def main():
     if not os.path.exists("hotel.db"):
         database.fill_db()
@@ -136,22 +194,25 @@ def main():
     loop = True
     while loop:
         print("Enter 1 to view available rooms")
-        print("Enter 2 to create a reservation")
-        print("Enter 3 to check in a guest")
-        print("Enter 4 to check out a guest")
-        print("Enter 5 to mark a room as clean")
-        print("Enter 6 to quit")
+        print("Enter 2 to sort rooms by max capacity")
+        print("Enter 3 to create a reservation")
+        print("Enter 4 to check in a guest")
+        print("Enter 5 to check out a guest")
+        print("Enter 6 to mark a room as clean")
+        print("Enter 7 to quit")
         choice = int(input("Enter option: "))
 
         if choice == 1:
             display_available_rooms(conn)
         elif choice == 2:
-            create_reservation(conn)
+            filter_rooms(conn)
         elif choice == 3:
-            check_in(conn)
+            create_reservation(conn)
         elif choice == 4:
-            check_out(conn)
+            check_in(conn)
         elif choice == 5:
+            check_out(conn)
+        elif choice == 6:
             change_room_status(conn)
         else:
             loop = False
