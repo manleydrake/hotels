@@ -2,6 +2,7 @@ import database
 import os.path
 from random import randint
 from datetime import date
+from easygui import *
 
 
 def create_customer_profile(conn, conf_num, phone):
@@ -25,10 +26,13 @@ def display_available_rooms(conn):
         cur = conn.cursor()
         cur.execute("SELECT * FROM rooms WHERE status = 'Available';")
         avail_rooms = cur.fetchall()
+        rooms = "Room #, Floor, Type, Pull Out, Max Cap, Price, Status \n"
         for i in range(len(avail_rooms)):
             for j in range(7):
-                print(avail_rooms[i][j], end=" ")
-            print()
+                rooms += str(avail_rooms[i][j])
+                rooms += " "
+            rooms += "\n"
+        msgbox(msg=rooms, title="Available Rooms")
     cur.close()
 
 
@@ -193,26 +197,23 @@ def main():
 
     loop = True
     while loop:
-        print("Enter 1 to view available rooms")
-        print("Enter 2 to sort rooms by max capacity")
-        print("Enter 3 to create a reservation")
-        print("Enter 4 to check in a guest")
-        print("Enter 5 to check out a guest")
-        print("Enter 6 to mark a room as clean")
-        print("Enter 7 to quit")
-        choice = int(input("Enter option: "))
+        msg = "What Would You Like to Do?"
+        title = "Options"
+        choices = ["View Available Rooms", "Sort Rooms by Max Capacity", "Create a New Reservation", "Check In", "Check Out",
+                   "Mark a Room as Clean"]
+        choice = choicebox(msg, title, choices)
 
-        if choice == 1:
+        if choice == "View Available Rooms":
             display_available_rooms(conn)
-        elif choice == 2:
+        elif choice == "Sort Rooms by Max Capacity":
             filter_rooms(conn)
-        elif choice == 3:
+        elif choice == "Create a New Reservation":
             create_reservation(conn)
-        elif choice == 4:
+        elif choice == "Check In":
             check_in(conn)
-        elif choice == 5:
+        elif choice == "Check Out":
             check_out(conn)
-        elif choice == 6:
+        elif choice == "Mark a Room as Clean":
             change_room_status(conn)
         else:
             loop = False
