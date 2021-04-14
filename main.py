@@ -20,6 +20,22 @@ def create_customer_profile(conn, conf_num, phone):
     cur.close()
 
 
+def update_customer_profile(conn):
+    confirmation_num = input("Enter confirmation number: ")
+    fName = input("Enter the first name: ")
+    lName = input("Enter the last name: ")
+    payment = input("Enter payment method: ")
+    email = input("Enter email: ")
+    phone = input("Enter phone number: ")
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE customer SET  first_name = ?, last_name = ?, payment_type = ?, email = ?, phone_num = ? WHERE confirmation_num = ?",
+            (fName, lName, payment, email, phone, confirmation_num),
+        )
+        conn.commit()
+
+
 def display_available_rooms(conn):
     if conn is not None:
         cur = conn.cursor()
@@ -41,7 +57,6 @@ def display_arrivals(conn):
         arrivals = cur.fetchall()
         print(arrivals)
     cur.close()
-    conn.close()
 
 
 def display_departures(conn):
@@ -53,7 +68,6 @@ def display_departures(conn):
         arrivals = cur.fetchall()
         print(arrivals)
     cur.close()
-    conn.close()
 
 
 def create_reservation(conn):
@@ -62,12 +76,13 @@ def create_reservation(conn):
     check_out = input("Enter desired check out date (YYYY-MM-DD): ")
     num_nights = int(input("Enter the number of nights: "))
     phone = int(input("Enter phone number in form xxxxxxxxxx: "))
+    res_status = "Reserved"
 
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO reservation (confirmation_num, num_nights, check_in_date, check_out_date, phone_num) VALUES (?, ?, ?, ?, ?)",
-            (conf_num, num_nights, check_in, check_out, phone),
+            "INSERT INTO reservation (confirmation_num, num_nights, check_in_date, check_out_date, phone_num, res_status) VALUES (?, ?, ?, ?, ?, ?)",
+            (conf_num, num_nights, check_in, check_out, phone, res_status),
         )
         conn.commit()
     create_customer_profile(conn, conf_num, phone)
@@ -82,6 +97,11 @@ def check_in(conn):
         cur = conn.cursor()
         cur.execute(
             "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
+        )
+
+        cur.execute(
+            "UPDATE reservation SET res_status = 'Checked_In' WHERE confirmation_num = ?",
+            (conf_num,),
         )
 
         cur.execute(
@@ -135,6 +155,7 @@ def check_in(conn):
 
 def check_out(conn):
     room_num = int(input("Enter the room you want to check out: "))
+    conf_num = input("Enter the confirmation number: ")
 
     if conn is not None:
         cur = conn.cursor()
@@ -142,6 +163,10 @@ def check_out(conn):
             "UPDATE rooms SET status = 'Needs Cleaning' WHERE room_num = ?", (room_num,)
         )
         cur.execute("DELETE FROM booking WHERE room_num = ?", (room_num,))
+        cur.execute(
+            "UPDATE reservation SET res_status = 'Checked Out' WHERE confirmation_num = ?",
+            (conf_num,),
+        )
     conn.commit()
 
 
@@ -183,6 +208,17 @@ def filter_rooms(conn):
             print()
 
 
+def mark_no_show(conn):
+    conf_num = input("Enter the confirmation number: ")
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE reservation SET res_status = 'No Show' WHERE confirmation_num = ?",
+            (conf_num,),
+        )
+    conn.commit()
+
+
 def main():
     if not os.path.exists("hotel.db"):
         database.fill_db()
@@ -199,7 +235,8 @@ def main():
         print("Enter 4 to check in a guest")
         print("Enter 5 to check out a guest")
         print("Enter 6 to mark a room as clean")
-        print("Enter 7 to quit")
+        print("Enter 7 to update customer profile")
+        print("Enter 8 to quit")
         choice = int(input("Enter option: "))
 
         if choice == 1:
@@ -214,6 +251,8 @@ def main():
             check_out(conn)
         elif choice == 6:
             change_room_status(conn)
+        elif choice == 7:
+            update_customer_profile(conn)
         else:
             loop = False
     conn.close()
