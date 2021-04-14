@@ -59,7 +59,8 @@ def fill_db():
                                             num_nights integer NOT NULL,
                                             check_in_date text NOT NULL,
                                             check_out_date text NOT NULL,
-                                            phone_num text NOT NULL
+                                            phone_num text NOT NULL,
+                                            res_status text NOT NULL
                                         );"""
 
     # create a database connection
