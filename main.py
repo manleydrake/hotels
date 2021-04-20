@@ -6,10 +6,14 @@ from easygui import *
 
 
 def create_customer_profile(conn, conf_num, phone):
-    first = input("Enter first name: ")
-    last = input("Enter last name: ")
-    payment = input("Enter payment type: ")
-    email = input("Enter email address: ")
+    msg = "Enter Customer Information"
+    title = "Customer Information"
+    fieldNames = ["First Name", "Last Name", "Payment Type", "Email Address"]
+    fieldValues = multenterbox(msg, title, fieldNames)
+    first = fieldValues[0].strip()
+    last = fieldValues[1].strip()
+    payment = fieldValues[2].strip()
+    email = fieldValues[3].strip()
 
     if conn is not None:
         cur = conn.cursor()
@@ -76,10 +80,14 @@ def display_departures(conn):
 
 def create_reservation(conn):
     conf_num = randint(1, 10000)
-    check_in = input("Enter desired check in date (YYYY-MM-DD): ")
-    check_out = input("Enter desired check out date (YYYY-MM-DD): ")
-    num_nights = int(input("Enter the number of nights: "))
-    phone = int(input("Enter phone number in form xxxxxxxxxx: "))
+    msg = "Enter Reservation Information"
+    title = "Create Reservation"
+    fieldNames = ["Check in Date (YYYY-MM-DD)", "Check out Date (YYYY-MM-DD)", "Number of Nights", "Phone Number"]
+    fieldValues = multenterbox(msg, title, fieldNames)
+    check_in = fieldValues[0].strip()
+    check_out = fieldValues[1].strip()
+    num_nights = fieldValues[2].strip()
+    phone = fieldValues[3].strip()
     res_status = "Reserved"
 
     if conn is not None:
