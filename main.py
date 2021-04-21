@@ -92,13 +92,19 @@ def create_reservation(conn):
     create_customer_profile(conn, conf_num, phone)
     print("Your confirmation number is: ", conf_num)
 
-
 def check_in(conn):
-    conf_num = input("Enter the confirmation number: ")
-    room_num = int(input("Please assign a room number: "))
+    conf_num = enterbox(msg="Enter the confirmation number: ", title="Check In")
 
     if conn is not None:
         cur = conn.cursor()
+
+        msg ="Select a Room Number"
+        title = "Check In"
+        cur.execute("SELECT room_num FROM rooms WHERE status = 'Available'")
+        avail_rooms = [int(record[0]) for record in cur.fetchall()]
+        choices = avail_rooms
+        room_num = choicebox(msg, title, choices)
+      
         cur.execute(
             "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
         )
@@ -141,6 +147,7 @@ def check_in(conn):
         print(
             room_num, conf_num, num_nights, check_in_date, check_out_date, phone_number
         )
+        msgbox(msg="Reservation checked in successfully.")
         cur.execute(
             "INSERT INTO booking (room_num, confirmation_num, num_nights, check_in_date, check_out_date, phone_num, late_check_out) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
@@ -153,13 +160,13 @@ def check_in(conn):
                 late,
             ),
         )
-
     conn.commit()
 
 
+
 def check_out(conn):
-    room_num = int(input("Enter the room you want to check out: "))
-    conf_num = input("Enter the confirmation number: ")
+    room_num = enterbox(msg="Enter the room you want to check out: ", title="Check Out")
+    conf_num = enterbox(msg="Enter the confirmation number: ", title="Check Out")
 
     if conn is not None:
         cur = conn.cursor()
@@ -171,6 +178,7 @@ def check_out(conn):
             "UPDATE reservation SET res_status = 'Checked Out' WHERE confirmation_num = ?",
             (conf_num,),
         )
+    msgbox(msg="Reservation has been checked out.")
     conn.commit()
 
 
@@ -186,13 +194,14 @@ def request_late_check_out(conn):
 
 
 def change_room_status(conn):
-    room_num = int(input("Enter a room number: "))
+    room_num = enterbox(msg="Enter a room number: ", title="Update Room Status")
 
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
             "UPDATE rooms SET status = 'Available' WHERE room_num = ?", (room_num,)
         )
+    msgbox(msg="Room status has been updated successfully.")
     conn.commit()
 
 
