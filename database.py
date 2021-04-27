@@ -46,7 +46,7 @@ def fill_db():
                                     );"""
 
     create_customer_table = """CREATE TABLE IF NOT EXISTS customer (
-                                    confirmation_num integer PRIMARY KEY,
+                                    confirmation_num text PRIMARY KEY,
                                     first_name text NOT NULL,
                                     last_name text NOT NULL,
                                     payment_type text NOT NULL,

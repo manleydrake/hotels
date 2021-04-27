@@ -3,6 +3,7 @@ import os.path
 from random import randint
 from datetime import date
 from easygui import *
+import pdb
 
 
 def create_customer_profile(conn, conf_num, phone):
@@ -46,24 +47,39 @@ def display_available_rooms(conn):
         cur = conn.cursor()
         cur.execute("SELECT * FROM rooms WHERE status = 'Available';")
         avail_rooms = cur.fetchall()
-        rooms = "Room #, Floor, Type, Pull Out, Max Cap, Price, Status \n"
-        for i in range(len(avail_rooms)):
-            for j in range(7):
-                rooms += str(avail_rooms[i][j])
-                rooms += " "
-            rooms += "\n"
-        msgbox(msg=rooms, title="Available Rooms")
+        # rooms = "Room #, Floor, Type, Pull Out, Max Cap, Price, Status \n"
+        # for i in range(len(avail_rooms)):
+        #     for j in range(7):
+        #         rooms += str(avail_rooms[i][j])
+        #         rooms += " "
+        #     rooms += "\n"
+        # msgbox(msg=rooms, title="Available Rooms")
+        return avail_rooms
     cur.close()
 
 
 def display_arrivals(conn):
     if conn is not None:
         cur = conn.cursor()
-        today = date.today()
+        today = "2021-01-01"
+        # today = date.today()
         sql = """SELECT * FROM reservation WHERE check_in_date = '%s'""" % today
         cur.execute(sql)
         arrivals = cur.fetchall()
-        print(arrivals)
+        msg = "What Would You Like to Do?"
+        title = "Options"
+        choices = ["Conf Num/Num Nights/Check In/Check Out/Phone/Status"]
+        for i in range(len(arrivals)):
+            arr = ""
+            for j in range(6):
+                arr += str(arrivals[i][j])
+                arr += " "
+            choices.append(arr)
+        choice = choicebox(msg, title, choices)
+        conf_num = choice.split(" ")
+        conf_num = conf_num[0]
+        check_in(conn, conf_num)
+
     cur.close()
 
 
@@ -73,8 +89,8 @@ def display_departures(conn):
         today = date.today()
         sql = """SELECT * FROM reservation WHERE check_out_date = '%s'""" % today
         cur.execute(sql)
-        arrivals = cur.fetchall()
-        print(arrivals)
+        departures = cur.fetchall()
+        print(departures)
     cur.close()
 
 
@@ -82,7 +98,12 @@ def create_reservation(conn):
     conf_num = randint(1, 10000)
     msg = "Enter Reservation Information"
     title = "Create Reservation"
-    fieldNames = ["Check in Date (YYYY-MM-DD)", "Check out Date (YYYY-MM-DD)", "Number of Nights", "Phone Number"]
+    fieldNames = [
+        "Check in Date (YYYY-MM-DD)",
+        "Check out Date (YYYY-MM-DD)",
+        "Number of Nights",
+        "Phone Number",
+    ]
     fieldValues = multenterbox(msg, title, fieldNames)
     check_in = fieldValues[0].strip()
     check_out = fieldValues[1].strip()
@@ -101,10 +122,20 @@ def create_reservation(conn):
     print("Your confirmation number is: ", conf_num)
 
 
-def check_in(conn):
-    conf_num = input("Enter the confirmation number: ")
-    room_num = int(input("Please assign a room number: "))
-
+def check_in(conn, conf_num):
+    avail_rooms = display_available_rooms(conn)
+    msg = "Click on an available room to check in to"
+    title = "Options"
+    choices = ["Room #/Floor/Type/Pull Out/Max Cap/Price/Status"]
+    for i in range(len(avail_rooms)):
+        arr = ""
+        for j in range(7):
+            arr += str(avail_rooms[i][j])
+            arr += " "
+        choices.append(arr)
+    choice = choicebox(msg, title, choices)
+    room_num = choice.split(" ", 1)
+    room_num = int(choice[0])
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
@@ -146,9 +177,6 @@ def check_in(conn):
 
         late = "No"
 
-        print(
-            room_num, conf_num, num_nights, check_in_date, check_out_date, phone_number
-        )
         cur.execute(
             "INSERT INTO booking (room_num, confirmation_num, num_nights, check_in_date, check_out_date, phone_num, late_check_out) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
@@ -243,8 +271,15 @@ def main():
     while loop:
         msg = "What Would You Like to Do?"
         title = "Options"
-        choices = ["View Available Rooms", "Sort Rooms by Max Capacity", "Create a New Reservation", "Check In", "Check Out",
-                   "Mark a Room as Clean"]
+        choices = [
+            "View Available Rooms",
+            "Sort Rooms by Max Capacity",
+            "Create a New Reservation",
+            "Check In",
+            "Check Out",
+            "Mark a Room as Clean",
+            "View Arrivals Today",
+        ]
         choice = choicebox(msg, title, choices)
 
         if choice == "View Available Rooms":
@@ -259,6 +294,8 @@ def main():
             check_out(conn)
         elif choice == "Mark a Room as Clean":
             change_room_status(conn)
+        elif choice == "View Arrivals Today":
+            display_arrivals(conn)
         else:
             loop = False
     conn.close()
