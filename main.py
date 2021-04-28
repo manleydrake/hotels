@@ -92,19 +92,20 @@ def create_reservation(conn):
     create_customer_profile(conn, conf_num, phone)
     print("Your confirmation number is: ", conf_num)
 
+
 def check_in(conn):
     conf_num = enterbox(msg="Enter the confirmation number: ", title="Check In")
 
     if conn is not None:
         cur = conn.cursor()
 
-        msg ="Select a Room Number"
+        msg = "Select a Room Number"
         title = "Check In"
         cur.execute("SELECT room_num FROM rooms WHERE status = 'Available'")
         avail_rooms = [int(record[0]) for record in cur.fetchall()]
         choices = avail_rooms
         room_num = choicebox(msg, title, choices)
-      
+
         cur.execute(
             "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
         )
@@ -163,7 +164,6 @@ def check_in(conn):
     conn.commit()
 
 
-
 def check_out(conn):
     room_num = enterbox(msg="Enter the room you want to check out: ", title="Check Out")
     conf_num = enterbox(msg="Enter the confirmation number: ", title="Check Out")
@@ -191,6 +191,22 @@ def request_late_check_out(conn):
             (room_selected),
         )
     conn.commit()
+
+
+def display_in_house_reservations(conn):
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM booking")
+        in_house = cur.fetchall()
+        in_house_res = (
+            "Room#, Conf#, #Nights, C/I Date,    C/O Date,    Phone#,   Late C/O \n"
+        )
+        for j in range(len(in_house)):
+            for k in range(7):
+                in_house_res += str(in_house[j][k])
+                in_house_res += "    "
+            in_house_res += "\n"
+        msgbox(msg=in_house_res, title="In House")
 
 
 def change_room_status(conn):
@@ -222,13 +238,19 @@ def filter_rooms(conn):
 
 
 def mark_no_show(conn):
-    conf_num = input("Enter the confirmation number: ")
-    if conn is not None:
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE reservation SET res_status = 'No Show' WHERE confirmation_num = ?",
-            (conf_num,),
-        )
+    conf_num = enterbox(
+        msg="Enter the confirmation number: ", title="Mark Reservation as No Show"
+    )
+    if conf_num is None:
+        msgbox(msg="Invalid confimation number entered.")
+    else:
+        if conn is not None:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE reservation SET res_status = 'No Show' WHERE confirmation_num = ?",
+                (conf_num,),
+            )
+            msgbox(msg="Reservation status changed to No Show.")
     conn.commit()
 
 
@@ -244,12 +266,22 @@ def main():
     while loop:
         msg = "What Would You Like to Do?"
         title = "Options"
-        choices = ["View Available Rooms", "Sort Rooms by Max Capacity", "Create a New Reservation", "Check In", "Check Out",
-                   "Mark a Room as Clean"]
+        choices = [
+            "View Available Rooms",
+            "View Reservations In House",
+            "Sort Rooms by Max Capacity",
+            "Create a New Reservation",
+            "Check In",
+            "Check Out",
+            "Mark a Room as Clean",
+            "Mark a Reservation as a No Show",
+        ]
         choice = choicebox(msg, title, choices)
 
         if choice == "View Available Rooms":
             display_available_rooms(conn)
+        elif choice == "View Reservations In House":
+            display_in_house_reservations(conn)
         elif choice == "Sort Rooms by Max Capacity":
             filter_rooms(conn)
         elif choice == "Create a New Reservation":
@@ -260,6 +292,8 @@ def main():
             check_out(conn)
         elif choice == "Mark a Room as Clean":
             change_room_status(conn)
+        elif choice == "Mark a Reservation as a No Show":
+            mark_no_show(conn)
         else:
             loop = False
     conn.close()
