@@ -42,18 +42,19 @@ def update_customer_profile(conn):
         conn.commit()
 
 
-def display_available_rooms(conn):
+def display_available_rooms(conn, display):
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT * FROM rooms WHERE status = 'Available';")
         avail_rooms = cur.fetchall()
-        # rooms = "Room #, Floor, Type, Pull Out, Max Cap, Price, Status \n"
-        # for i in range(len(avail_rooms)):
-        #     for j in range(7):
-        #         rooms += str(avail_rooms[i][j])
-        #         rooms += " "
-        #     rooms += "\n"
-        # msgbox(msg=rooms, title="Available Rooms")
+        if display:
+            rooms = "Room #, Floor, Type, Pull Out, Max Cap, Price, Status \n"
+            for i in range(len(avail_rooms)):
+                for j in range(7):
+                    rooms += str(avail_rooms[i][j])
+                    rooms += " "
+                rooms += "\n"
+            msgbox(msg=rooms, title="Available Rooms")
         return avail_rooms
     cur.close()
 
@@ -61,8 +62,7 @@ def display_available_rooms(conn):
 def display_arrivals(conn):
     if conn is not None:
         cur = conn.cursor()
-        today = "2021-01-01"
-        # today = date.today()
+        today = date.today()
         sql = """SELECT * FROM reservation WHERE check_in_date = '%s'""" % today
         cur.execute(sql)
         arrivals = cur.fetchall()
@@ -90,7 +90,19 @@ def display_departures(conn):
         sql = """SELECT * FROM reservation WHERE check_out_date = '%s'""" % today
         cur.execute(sql)
         departures = cur.fetchall()
-        print(departures)
+        msg = "What Would You Like to Do?"
+        title = "Options"
+        choices = ["Conf Num/Num Nights/Check In/Check Out/Phone/Status"]
+        for i in range(len(departures)):
+            arr = ""
+            for j in range(6):
+                arr += str(departures[i][j])
+                arr += " "
+            choices.append(arr)
+        choice = choicebox(msg, title, choices)
+        conf_num = choice.split(" ")
+        conf_num = conf_num[0]
+        check_out(conn, conf_num)
     cur.close()
 
 
@@ -123,7 +135,7 @@ def create_reservation(conn):
 
 
 def check_in(conn, conf_num):
-    avail_rooms = display_available_rooms(conn)
+    avail_rooms = display_available_rooms(conn, False)
     msg = "Click on an available room to check in to"
     title = "Options"
     choices = ["Room #/Floor/Type/Pull Out/Max Cap/Price/Status"]
@@ -193,9 +205,8 @@ def check_in(conn, conf_num):
     conn.commit()
 
 
-def check_out(conn):
-    room_num = int(input("Enter the room you want to check out: "))
-    conf_num = input("Enter the confirmation number: ")
+def check_out(conn, conf_num):
+    room_num = enterbox("Enter the room number to be checked out", "Check Out", "")
 
     if conn is not None:
         cur = conn.cursor()
@@ -222,7 +233,7 @@ def request_late_check_out(conn):
 
 
 def change_room_status(conn):
-    room_num = int(input("Enter a room number: "))
+    room_num = enterbox("Enter the room number to change", "Change Room Status", "")
 
     if conn is not None:
         cur = conn.cursor()
@@ -279,11 +290,13 @@ def main():
             "Check Out",
             "Mark a Room as Clean",
             "View Arrivals Today",
+            "View Departures Today",
+            "Change Room Status"
         ]
         choice = choicebox(msg, title, choices)
 
         if choice == "View Available Rooms":
-            display_available_rooms(conn)
+            display_available_rooms(conn, True)
         elif choice == "Sort Rooms by Max Capacity":
             filter_rooms(conn)
         elif choice == "Create a New Reservation":
@@ -296,6 +309,10 @@ def main():
             change_room_status(conn)
         elif choice == "View Arrivals Today":
             display_arrivals(conn)
+        elif choice == "View Departures Today":
+            display_departures(conn)
+        elif choice == "Change Room Status":
+            change_room_status(conn)
         else:
             loop = False
     conn.close()
