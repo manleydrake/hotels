@@ -3,7 +3,7 @@ import os.path
 from random import randint
 from datetime import date
 from easygui import *
-import pdb
+
 
 
 def create_customer_profile(conn, conf_num, phone):
@@ -147,7 +147,7 @@ def check_in(conn, conf_num):
         choices.append(arr)
     choice = choicebox(msg, title, choices)
     room_num = choice.split(" ", 1)
-    room_num = int(choice[0])
+    room_num = int(room_num[0])
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
