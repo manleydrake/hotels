@@ -150,6 +150,14 @@ def check_in(conn, conf_num):
     room_num = int(choice[0])
     if conn is not None:
         cur = conn.cursor()
+
+        msg = "Select a Room Number"
+        title = "Check In"
+        cur.execute("SELECT room_num FROM rooms WHERE status = 'Available'")
+        avail_rooms = [int(record[0]) for record in cur.fetchall()]
+        choices = avail_rooms
+        room_num = choicebox(msg, title, choices)
+
         cur.execute(
             "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
         )
@@ -189,6 +197,7 @@ def check_in(conn, conf_num):
 
         late = "No"
 
+        msgbox(msg="Reservation checked in successfully.")
         cur.execute(
             "INSERT INTO booking (room_num, confirmation_num, num_nights, check_in_date, check_out_date, phone_num, late_check_out) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
@@ -201,7 +210,6 @@ def check_in(conn, conf_num):
                 late,
             ),
         )
-
     conn.commit()
 
 
@@ -218,18 +226,41 @@ def check_out(conn, conf_num):
             "UPDATE reservation SET res_status = 'Checked Out' WHERE confirmation_num = ?",
             (conf_num,),
         )
+    msgbox(msg="Reservation has been checked out.")
     conn.commit()
 
 
 def request_late_check_out(conn):
-    room_selected = int(input("Enter a room number: "))
+
     if conn is not None:
         cur = conn.cursor()
+        msg = "Select a Room to mark as late check out"
+        title = "Request Late Check Out"
+        cur.execute("SELECT room_num FROM rooms WHERE status = 'Occupied'")
+        occ_rooms = [int(record[0]) for record in cur.fetchall()]
+        choices = occ_rooms
+        room_num = choicebox(msg, title, choices)
         cur.execute(
-            "UPDATE booking SET late_check_out = 'Yes' WHERE room_num = ?",
-            (room_selected),
+            "UPDATE booking SET late_check_out = 'Yes' WHERE room_num = ?", (room_num,)
         )
+        msgbox(msg="Room has been marked for a late check out.")
     conn.commit()
+
+
+def display_in_house_reservations(conn):
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM booking")
+        in_house = cur.fetchall()
+        in_house_res = (
+            "Room#, Conf#, #Nights, C/I Date,    C/O Date,    Phone#,   Late C/O \n"
+        )
+        for j in range(len(in_house)):
+            for k in range(7):
+                in_house_res += str(in_house[j][k])
+                in_house_res += "    "
+            in_house_res += "\n"
+        msgbox(msg=in_house_res, title="In House")
 
 
 def change_room_status(conn):
@@ -240,6 +271,7 @@ def change_room_status(conn):
         cur.execute(
             "UPDATE rooms SET status = 'Available' WHERE room_num = ?", (room_num,)
         )
+    msgbox(msg="Room status has been updated successfully.")
     conn.commit()
 
 
@@ -260,13 +292,19 @@ def filter_rooms(conn):
 
 
 def mark_no_show(conn):
-    conf_num = input("Enter the confirmation number: ")
-    if conn is not None:
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE reservation SET res_status = 'No Show' WHERE confirmation_num = ?",
-            (conf_num,),
-        )
+    conf_num = enterbox(
+        msg="Enter the confirmation number: ", title="Mark Reservation as No Show"
+    )
+    if conf_num is None:
+        msgbox(msg="Invalid confimation number entered.")
+    else:
+        if conn is not None:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE reservation SET res_status = 'No Show' WHERE confirmation_num = ?",
+                (conf_num,),
+            )
+            msgbox(msg="Reservation status changed to No Show.")
     conn.commit()
 
 
@@ -284,6 +322,8 @@ def main():
         title = "Options"
         choices = [
             "View Available Rooms",
+            "View Reservations In House",
+            "Mark a Room as Late Check Out",
             "Sort Rooms by Max Capacity",
             "Create a New Reservation",
             "Check In",
@@ -292,11 +332,16 @@ def main():
             "View Arrivals Today",
             "View Departures Today",
             "Change Room Status"
+            "Mark a Reservation as a No Show",
         ]
         choice = choicebox(msg, title, choices)
 
         if choice == "View Available Rooms":
             display_available_rooms(conn, True)
+        elif choice == "View Reservations In House":
+            display_in_house_reservations(conn)
+        elif choice == "Mark a Room as Late Check Out":
+            request_late_check_out(conn)
         elif choice == "Sort Rooms by Max Capacity":
             filter_rooms(conn)
         elif choice == "Create a New Reservation":
@@ -313,6 +358,8 @@ def main():
             display_departures(conn)
         elif choice == "Change Room Status":
             change_room_status(conn)
+        elif choice == "Mark a Reservation as a No Show":
+            mark_no_show(conn)
         else:
             loop = False
     conn.close()
