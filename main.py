@@ -82,7 +82,12 @@ def create_reservation(conn):
     conf_num = randint(1, 10000)
     msg = "Enter Reservation Information"
     title = "Create Reservation"
-    fieldNames = ["Check in Date (YYYY-MM-DD)", "Check out Date (YYYY-MM-DD)", "Number of Nights", "Phone Number"]
+    fieldNames = [
+        "Check in Date (YYYY-MM-DD)",
+        "Check out Date (YYYY-MM-DD)",
+        "Number of Nights",
+        "Phone Number",
+    ]
     fieldValues = multenterbox(msg, title, fieldNames)
     check_in = fieldValues[0].strip()
     check_out = fieldValues[1].strip()
@@ -191,13 +196,19 @@ def check_out(conn):
 
 
 def request_late_check_out(conn):
-    room_selected = int(input("Enter a room number: "))
+
     if conn is not None:
         cur = conn.cursor()
+        msg = "Select a Room to mark as late check out"
+        title = "Request Late Check Out"
+        cur.execute("SELECT room_num FROM rooms WHERE status = 'Occupied'")
+        occ_rooms = [int(record[0]) for record in cur.fetchall()]
+        choices = occ_rooms
+        room_num = choicebox(msg, title, choices)
         cur.execute(
-            "UPDATE booking SET late_check_out = 'Yes' WHERE room_num = ?",
-            (room_selected),
+            "UPDATE booking SET late_check_out = 'Yes' WHERE room_num = ?", (room_num,)
         )
+        msgbox(msg="Room has been marked for a late check out.")
     conn.commit()
 
 
@@ -277,6 +288,7 @@ def main():
         choices = [
             "View Available Rooms",
             "View Reservations In House",
+            "Mark a Room as Late Check Out",
             "Sort Rooms by Max Capacity",
             "Create a New Reservation",
             "Check In",
@@ -290,6 +302,8 @@ def main():
             display_available_rooms(conn)
         elif choice == "View Reservations In House":
             display_in_house_reservations(conn)
+        elif choice == "Mark a Room as Late Check Out":
+            request_late_check_out(conn)
         elif choice == "Sort Rooms by Max Capacity":
             filter_rooms(conn)
         elif choice == "Create a New Reservation":
