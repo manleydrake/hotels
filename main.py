@@ -3,7 +3,6 @@ import os.path
 from random import randint
 from datetime import date
 from easygui import *
-import pdb
 
 
 def create_customer_profile(conn, conf_num, phone):
@@ -27,12 +26,25 @@ def create_customer_profile(conn, conf_num, phone):
 
 
 def update_customer_profile(conn):
-    confirmation_num = input("Enter confirmation number: ")
-    fName = input("Enter the first name: ")
-    lName = input("Enter the last name: ")
-    payment = input("Enter payment method: ")
-    email = input("Enter email: ")
-    phone = input("Enter phone number: ")
+    confirmation_num = enterbox(
+        "Enter the confirmation number", "Update Information", ""
+    )
+    msg = "Enter Customer Information"
+    title = "Customer Information"
+    fieldNames = [
+        "First Name",
+        "Last Name",
+        "Payment Type",
+        "Email Address",
+        "Phone Number",
+    ]
+    fieldValues = multenterbox(msg, title, fieldNames)
+    fName = fieldValues[0].strip()
+    lName = fieldValues[1].strip()
+    payment = fieldValues[2].strip()
+    email = fieldValues[3].strip()
+    phone = fieldValues[4].strip()
+
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
@@ -131,7 +143,8 @@ def create_reservation(conn):
         )
         conn.commit()
     create_customer_profile(conn, conf_num, phone)
-    print("Your confirmation number is: ", conf_num)
+    conf_num_string = ("Your confirmation number is: ", conf_num)
+    msgbox(msg=conf_num_string, title="Confirmation Number")
 
 
 def check_in(conn, conf_num):
@@ -147,7 +160,7 @@ def check_in(conn, conf_num):
         choices.append(arr)
     choice = choicebox(msg, title, choices)
     room_num = choice.split(" ", 1)
-    room_num = int(choice[0])
+    room_num = int(room_num[0])
     if conn is not None:
         cur = conn.cursor()
 
@@ -331,7 +344,6 @@ def main():
             "Mark a Room as Clean",
             "View Arrivals Today",
             "View Departures Today",
-            "Change Room Status"
             "Mark a Reservation as a No Show",
         ]
         choice = choicebox(msg, title, choices)
@@ -347,17 +359,19 @@ def main():
         elif choice == "Create a New Reservation":
             create_reservation(conn)
         elif choice == "Check In":
-            check_in(conn)
+            confirmation_num = enterbox("Enter the confirmation number", "Check In", "")
+            check_in(conn, confirmation_num)
         elif choice == "Check Out":
-            check_out(conn)
+            confirmation_num = enterbox(
+                "Enter the confirmation number", "Check Out", ""
+            )
+            check_out(conn, confirmation_num)
         elif choice == "Mark a Room as Clean":
             change_room_status(conn)
         elif choice == "View Arrivals Today":
             display_arrivals(conn)
         elif choice == "View Departures Today":
             display_departures(conn)
-        elif choice == "Change Room Status":
-            change_room_status(conn)
         elif choice == "Mark a Reservation as a No Show":
             mark_no_show(conn)
         else:
