@@ -148,28 +148,23 @@ def create_reservation(conn):
 
 
 def check_in(conn, conf_num):
-    avail_rooms = display_available_rooms(conn, False)
-    msg = "Click on an available room to check in to"
-    title = "Options"
-    choices = ["Room #/Floor/Type/Pull Out/Max Cap/Price/Status"]
-    for i in range(len(avail_rooms)):
-        arr = ""
-        for j in range(7):
-            arr += str(avail_rooms[i][j])
-            arr += " "
-        choices.append(arr)
-    choice = choicebox(msg, title, choices)
-    room_num = choice.split(" ", 1)
-    room_num = int(room_num[0])
+
     if conn is not None:
         cur = conn.cursor()
 
-        msg = "Select a Room Number"
-        title = "Check In"
-        cur.execute("SELECT room_num FROM rooms WHERE status = 'Available'")
-        avail_rooms = [int(record[0]) for record in cur.fetchall()]
-        choices = avail_rooms
-        room_num = choicebox(msg, title, choices)
+        avail_rooms = display_available_rooms(conn, False)
+        msg = "Click on an available room to check in to"
+        title = "Options"
+        choices = ["Room #/Floor/Type/Pull Out/Max Cap/Price/Status"]
+        for i in range(len(avail_rooms)):
+            arr = ""
+            for j in range(7):
+                arr += str(avail_rooms[i][j])
+                arr += " "
+            choices.append(arr)
+        choice = choicebox(msg, title, choices)
+        room_num = choice.split(" ", 1)
+        room_num = int(room_num[0])
 
         cur.execute(
             "UPDATE rooms SET status = 'Occupied' WHERE room_num = ?", (room_num,)
@@ -335,16 +330,16 @@ def main():
         title = "Options"
         choices = [
             "View Available Rooms",
-            "View Reservations In House",
-            "Mark a Room as Late Check Out",
             "Sort Rooms by Max Capacity",
             "Create a New Reservation",
             "Check In",
             "Check Out",
-            "Mark a Room as Clean",
             "View Arrivals Today",
             "View Departures Today",
+            "Mark a Room as Late Check Out",
+            "Mark a Room as Clean",
             "Mark a Reservation as a No Show",
+            "View Reservations In House",
         ]
         choice = choicebox(msg, title, choices)
 
