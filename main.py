@@ -284,13 +284,16 @@ def change_room_status(conn):
 
 
 def filter_rooms(conn):
-    filter_room = int(input("How many people will be staying? "))
+    filter_room = enterbox(
+        msg="How many people will be staying? ", title="Filter Rooms")
+
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
             "SELECT room_num, max_capacity FROM rooms WHERE status = 'Available' and max_capacity >= ?",
             (filter_room,),
         )
+        msgbox(msg="Results: ")
         conn.commit()
         avail_rooms = cur.fetchall()
         for i in range(len(avail_rooms)):
