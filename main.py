@@ -29,29 +29,30 @@ def update_customer_profile(conn):
     confirmation_num = enterbox(
         "Enter the confirmation number", "Update Information", ""
     )
-    msg = "Enter Customer Information"
-    title = "Customer Information"
-    fieldNames = [
-        "First Name",
-        "Last Name",
-        "Payment Type",
-        "Email Address",
-        "Phone Number",
-    ]
-    fieldValues = multenterbox(msg, title, fieldNames)
-    fName = fieldValues[0].strip()
-    lName = fieldValues[1].strip()
-    payment = fieldValues[2].strip()
-    email = fieldValues[3].strip()
-    phone = fieldValues[4].strip()
+    if confirmation_num is not None:
+        msg = "Enter Customer Information"
+        title = "Customer Information"
+        fieldNames = [
+            "First Name",
+            "Last Name",
+            "Payment Type",
+            "Email Address",
+            "Phone Number",
+        ]
+        fieldValues = multenterbox(msg, title, fieldNames)
+        fName = fieldValues[0].strip()
+        lName = fieldValues[1].strip()
+        payment = fieldValues[2].strip()
+        email = fieldValues[3].strip()
+        phone = fieldValues[4].strip()
 
-    if conn is not None:
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE customer SET  first_name = ?, last_name = ?, payment_type = ?, email = ?, phone_num = ? WHERE confirmation_num = ?",
-            (fName, lName, payment, email, phone, confirmation_num),
-        )
-        conn.commit()
+        if conn is not None:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE customer SET  first_name = ?, last_name = ?, payment_type = ?, email = ?, phone_num = ? WHERE confirmation_num = ?",
+                (fName, lName, payment, email, phone, confirmation_num),
+            )
+            conn.commit()
 
 
 def display_available_rooms(conn, display):
@@ -90,6 +91,8 @@ def display_arrivals(conn):
         choice = choicebox(msg, title, choices)
         conf_num = choice.split(" ")
         conf_num = conf_num[0]
+        if choice == "Conf Num/Num Nights/Check In/Check Out/Phone/Status":
+            main()
         check_in(conn, conf_num)
 
     cur.close()
@@ -114,6 +117,8 @@ def display_departures(conn):
         choice = choicebox(msg, title, choices)
         conf_num = choice.split(" ")
         conf_num = conf_num[0]
+        if choice == "Conf Num/Num Nights/Check In/Check Out/Phone/Status":
+            main()
         check_out(conn, conf_num)
     cur.close()
 
@@ -286,7 +291,6 @@ def change_room_status(conn):
 def filter_rooms(conn):
     filter_room = enterbox(
         msg="How many people will be staying? ", title="Filter Rooms")
-
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
@@ -296,10 +300,16 @@ def filter_rooms(conn):
         msgbox(msg="Results: ")
         conn.commit()
         avail_rooms = cur.fetchall()
-        for i in range(len(avail_rooms)):
-            for j in range(2):
-                print(avail_rooms[i][j], end=" ")
-            print()
+
+        rooms = (
+             "Room #, Max Cap \n"
+        )
+        for j in range(len(avail_rooms)):
+            for k in range(2):
+                rooms += str(avail_rooms[j][k])
+                rooms += "    "
+            rooms += "\n"
+        msgbox(msg=rooms, title="In House")
 
 
 def mark_no_show(conn):
@@ -307,7 +317,7 @@ def mark_no_show(conn):
         msg="Enter the confirmation number: ", title="Mark Reservation as No Show"
     )
     if conf_num is None:
-        msgbox(msg="Invalid confimation number entered.")
+        msgbox(msg="Invalid confirmation number entered.")
     else:
         if conn is not None:
             cur = conn.cursor()
@@ -335,8 +345,7 @@ def main():
             "View Available Rooms",
             "Sort Rooms by Max Capacity",
             "Create a New Reservation",
-            "Check In",
-            "Check Out",
+            "Update Reservation",
             "View Arrivals Today",
             "View Departures Today",
             "Mark a Room as Late Check Out",
@@ -354,16 +363,10 @@ def main():
             request_late_check_out(conn)
         elif choice == "Sort Rooms by Max Capacity":
             filter_rooms(conn)
+        elif choice == "Update Reservation":
+            update_customer_profile(conn)
         elif choice == "Create a New Reservation":
             create_reservation(conn)
-        elif choice == "Check In":
-            confirmation_num = enterbox("Enter the confirmation number", "Check In", "")
-            check_in(conn, confirmation_num)
-        elif choice == "Check Out":
-            confirmation_num = enterbox(
-                "Enter the confirmation number", "Check Out", ""
-            )
-            check_out(conn, confirmation_num)
         elif choice == "Mark a Room as Clean":
             change_room_status(conn)
         elif choice == "View Arrivals Today":
